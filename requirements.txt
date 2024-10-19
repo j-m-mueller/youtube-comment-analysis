@@ -5,6 +5,7 @@ matplotlib==3.8.3
 nltk==3.9.1
 numpy==1.26.4
 pandas==2.2.1
+scikit-learn==1.5.2
 seaborn==0.13.2
 spacy==3.7.6
 textblob==0.18.0.post0

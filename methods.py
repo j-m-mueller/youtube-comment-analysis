@@ -1,14 +1,12 @@
-import json
+"""methods.py -- methods for donation and sentiment analysis and WordCloud generation."""
+
 import nltk
 import pandas as pd
 import random
-import re
 import seaborn as sns
 import string
 
-from bs4 import BeautifulSoup
 from currency_converter import CurrencyConverter
-from googletrans import Translator
 from matplotlib import pyplot as plt
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -241,11 +239,14 @@ def generate_wordcloud(tfidf_scores: pd.Series):
 
     :param tfidf_scores: pd.Series with scores.
     """
+    sns.set(font_scale=1.3)
+
     wordcloud = WordCloud(width=600, 
                           height=400, 
                           background_color='white',
                           random_state=42,
                           color_func=custom_color_func).generate_from_frequencies(tfidf_scores)
+    
     plt.figure(figsize=(6, 3))
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
