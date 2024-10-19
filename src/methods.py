@@ -105,7 +105,7 @@ def concatenate_comments(comments: List[str],
 
 """Polarity Calculation"""
 
-def get_polarity_df(comments: List[str]) -> pd.DataFrame:
+def get_comment_polarity_df(comments: List[str]) -> pd.DataFrame:
     """
     Calculate a polarity DF for a list of comments.
 
@@ -163,8 +163,7 @@ def preprocess_text(text: str,
 def extract_relevant_terms(comment_df: pd.DataFrame,
                            polarity_column: str = 'polarity_vader', 
                            polarity_threshold: float = 0.5, 
-                           max_features: int = 100,
-                           term_count: int = 10) -> Dict[str, pd.Series]:
+                           max_features: int = 100) -> Dict[str, pd.Series]:
     """
     Extracts relevant terms from positive and negative comments based on TF-IDF scores.
 
@@ -172,9 +171,8 @@ def extract_relevant_terms(comment_df: pd.DataFrame,
     :param polarity_column: column in which the polarity is stored.
     :param polarity_threshold: threshold for the polarity score to apply (defaults to 0.5).
     :param max_features: number of terms to keep based on TF-IDF scores (defaults to 100).
-    :param term_count: number of terms to return.
 
-    :return: returns top TF-IDF terms in a pd.Series for both positive and negative comments.
+    :return: returns TF-IDF terms in a pd.Series for both positive and negative comments.
     """
     # filter out highly positive and highly negative comments
     positive_comments = comment_df[comment_df[polarity_column] > polarity_threshold]['comment']
@@ -211,8 +209,8 @@ def extract_relevant_terms(comment_df: pd.DataFrame,
 
     # return the top terms for positive and negative comments
     return {
-        'positive': tfidf_positive.head(term_count),
-        'negative': tfidf_negative.head(term_count)
+        'positive': tfidf_positive,
+        'negative': tfidf_negative
     }
 
 
@@ -233,11 +231,13 @@ def custom_color_func(*args,
     return f"hsl({hue}, {saturation}%, {lightness}%)"
 
 
-def generate_wordcloud(tfidf_scores: pd.Series):
+def generate_wordcloud(tfidf_scores: pd.Series,
+                       title: str) -> None:
     """
     Generate a WordCloud based on a series of TF-IDF scores.
 
     :param tfidf_scores: pd.Series with scores.
+    :param title: title for the word cloud.
     """
     sns.set(font_scale=1.3)
 
@@ -248,6 +248,7 @@ def generate_wordcloud(tfidf_scores: pd.Series):
                           color_func=custom_color_func).generate_from_frequencies(tfidf_scores)
     
     plt.figure(figsize=(6, 3))
+    plt.title(title)
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
     plt.show()
