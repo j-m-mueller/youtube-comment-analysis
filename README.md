@@ -21,5 +21,5 @@ Ensure to install the requirements into a new virtual environment (`pip install 
 You have three choices to execute the analysis:
 
 1. Investigate the individual steps by going through the `youtube-comment-analysis.ipynb` notebook (includes explanations and some consistency tests)
-2. Run the analysis through the CommentProcessor object via the `class-usage.ipynb` notebook (very compact notebook)
-3. Run `main.py` from the command line (no Jupyter environment required)
+2. Run the analysis through the CommentProcessor class via the `class-usage.ipynb` notebook (very compact notebook)
+3. Run `main.py` from the command line (no Jupyter environment required). You can adjust the source HTML path and plotting options via arguments.
