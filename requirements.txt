@@ -1,1 +1,12 @@
+beautifulsoup4==4.12.3
 currency_converter==0.17.32
+googletrans==4.0.0rc1
+matplotlib==3.8.3
+nltk==3.9.1
+numpy==1.26.4
+pandas==2.2.1
+seaborn==0.13.2
+spacy==3.7.6
+textblob==0.18.0.post0
+vaderSentiment==3.3.2
+wordcloud==1.9.3
