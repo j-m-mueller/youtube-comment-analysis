@@ -1,5 +1,5 @@
 beautifulsoup4==4.12.3
-currency_converter==0.17.32
+CurrencyConverter==0.17.32
 googletrans==4.0.0rc1
 matplotlib==3.8.3
 nltk==3.9.1
