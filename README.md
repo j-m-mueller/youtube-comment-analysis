@@ -11,3 +11,15 @@ Repository for the analysis of YouTube comments. Extracts information on:
 ## Preparation
 
 Ensure that the body of the raw HTML of the YouTube page you want to inspect is pasted in `html_body.txt`. Scroll down a couple of times if you want to inspect more comments.
+
+## Requirements
+
+Ensure to install the requirements into a new virtual environment (`pip install -r requirements.txt`).
+
+## Startup
+
+You have three choices to execute the analysis:
+
+1. Investigate the individual steps by going through the `youtube-comment-analysis.ipynb` notebook (includes explanations and some consistency tests)
+2. Run the analysis through the CommentProcessor object via the `class-usage.ipynb` notebook (very compact notebook)
+3. Run `main.py` from the command line (no Jupyter environment required)
