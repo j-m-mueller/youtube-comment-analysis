@@ -1,9 +1,7 @@
 import argparse
-import sys
 
-sys.path.insert(0, './src')
-
-from comment_processor import CommentProcessor, plot_results
+from src.comment_analysis.comment_processor import CommentProcessor
+from src.comment_analysis.visualisation import plot_results
 
 
 def main():
