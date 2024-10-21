@@ -1,5 +1,6 @@
 """src.comment_processor.py -- processor class for analysing YouTube comments."""
 
+import pandas as pd
 import re
 import seaborn as sns
 
@@ -8,15 +9,17 @@ from dataclasses import dataclass
 from googletrans import Translator
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+from typing import List, Dict
 
-from methods import *
+from src.comment_analysis.methods import extract_relevant_terms, get_comment_polarity_df, concatenate_comments, get_currency_conversion_df
+from src.comment_analysis.exceptions import NoCommentsFoundException
 
 
 @dataclass
 class CommentProcessor:
     """Class for analysing YouTube comments."""
     
-    analyse_donations: bool = True
+    analyze_donations: bool = True
     target_currency: str = 'USD'
     translate_comments: bool = True
     translate_language_code: str = 'en'
@@ -38,26 +41,27 @@ class CommentProcessor:
         
         soup = BeautifulSoup(raw_html, 'html.parser')
 
-        # analyse comments
-        response_dict['comments'] = self._analyse_comments(soup=soup)
+        # analyze comments
+        response_dict['comments'] = self._analyze_comments(soup=soup)
 
         # estimate dislikes
-        self._estimate_dislikes(soup=soup,
-                                comment_df=response_dict['comments']['comment_df'])
+        response_dict['dislikes'] = {
+            'metrics': self._estimate_dislikes(
+                soup=soup,
+                comment_df=response_dict['comments']['details']['comment_df']
+            )
+        }
 
-        # analyse donations
-        if self.analyse_donations:
-            response_dict['donations'] = {
-                'donation_df': self._analyse_donations(soup=soup),
-                'target_currency': self.target_currency
-            }
+        # analyze donations
+        if self.analyze_donations:
+            response_dict['donations'] = self._analyze_donations(soup=soup)
 
         return response_dict
 
-    def _analyse_comments(self,
+    def _analyze_comments(self,
                           soup: BeautifulSoup) -> dict:
         """
-        Analyse comment data from parsed HTML.
+        Analyze comment data from parsed HTML.
 
         :param soup: parsed HTML data.
 
@@ -72,8 +76,18 @@ class CommentProcessor:
         print(f"Comment polarity median: VADER: {comment_df['polarity_vader'].median():.2f}, TextBlob: {comment_df['polarity_textblob'].median():.2f}")
 
         return {
-            'comment_df': comment_df,
-            'relevant_terms': relevant_terms
+            'metrics': {
+                'raw_comments__count': len(comments),
+                'translated_comments__count': len(translated_comments),
+                'sentiment_comments__vader__median': round(comment_df['polarity_vader'].median(), 4),
+                'sentiment_comments__textblob__median': 
+round(comment_df['polarity_textblob'].median(), 4)
+            },
+            'details': {
+                'raw_comments': comments,
+                'comment_df': comment_df,
+                'relevant_terms': relevant_terms
+            }
         }
 
     def _get_comments_from_html(self, 
@@ -87,6 +101,10 @@ class CommentProcessor:
         """
         content_divs = soup.find('div', {'id': 'contents', 
                                          'class': 'style-scope ytd-item-section-renderer style-scope ytd-item-section-renderer'})
+
+        if content_divs is None:
+            raise NoCommentsFoundException("No comments identified within raw HTML. Please check provided data!")
+        
         comment_spans = content_divs.findAll('span', {'role': 'text'})
         comments = [comment.text.strip() for comment in comment_spans if 'Antwort' not in comment.text.strip()]
 
@@ -132,15 +150,15 @@ class CommentProcessor:
 
     def _estimate_dislikes(self,
                            soup: BeautifulSoup,
-                           comment_df: pd.DataFrame) -> None:
+                           comment_df: pd.DataFrame) -> Dict[str, float]:
         """
         Dislike estimate based on extremely positive/negative comments and like count.
 
         :param soup: parsed HTML data.
         :param comment_df: DF with comment-related polarity.
-        """
-        polarity_cutoff = 0.5
 
+        :return: dictionary with like/dislike metrics.
+        """
         # get like count
         like_divs = soup.findAll('div', {'class': 'yt-spec-button-shape-next__button-text-content'})
         like_divs = [int(div.text.replace('.', '')) for div in like_divs if re.match('^\d{1,3}(\.\d{3})*$',  # regex expression for multi-digit number with point
@@ -150,18 +168,27 @@ class CommentProcessor:
         # get estimate of extremely positive/negative comment ratio
         comment_df['polarity_mean'] = (comment_df['polarity_vader'] + comment_df['polarity_textblob'])/ 2
         
-        highly_positive_count = (comment_df['polarity_mean'] > polarity_cutoff).astype(int).sum()
-        highly_negative_count = (comment_df['polarity_mean'] < -polarity_cutoff).astype(int).sum()
+        highly_positive_count = (comment_df['polarity_mean'] > self.dislike_polarity_cutoff).astype(int).sum()
+        highly_negative_count = (comment_df['polarity_mean'] < -self.dislike_polarity_cutoff).astype(int).sum()
         comment_ratio = highly_positive_count / highly_negative_count
 
+        dislike_estimate = int(like_count / comment_ratio)
+        
         print(f"\nHighly positive comments: {highly_positive_count}, highly negative comments: {highly_negative_count}, ratio positive/negative: {comment_ratio}")
         print(f"Video likes: {like_count}")
-        print(f"Estimate of video dislikes based on likes and comment polarity: {int(like_count / comment_ratio)}")
+        print(f"Estimate of video dislikes based on likes and comment polarity: {dislike_estimate}")
+
+        return {
+            'highly_positive_comments__count': highly_positive_count,
+            'highly_negative_comments__count': highly_negative_count,
+            'likes__count': like_count,
+            'dislikes__estimate': dislike_estimate
+        }
         
-    def _analyse_donations(self,
-                           soup: BeautifulSoup) -> pd.DataFrame:
+    def _analyze_donations(self,
+                           soup: BeautifulSoup) -> dict:
         """
-        Analyse donations embedded in YT comments.
+        Analyze donations embedded in YT comments.
 
         :param soup: parsed HTML data.
 
@@ -178,7 +205,16 @@ class CommentProcessor:
 
         print(f"\nTotal sum of donations: {merged_donation_df['conv_donation'].sum():.2f} {self.target_currency}")
 
-        return merged_donation_df
+        return {
+            'details': {
+                'donation_df': merged_donation_df
+            },
+            'metrics': {
+                'donations__count': len(merged_donation_df),
+                'donations__sum': round(merged_donation_df['conv_donation'].sum(), 2),
+                'donations__currency': self.target_currency
+            }
+        }
     
     def _get_donations_from_html(self,
                                  soup: BeautifulSoup) -> pd.DataFrame:
@@ -200,82 +236,3 @@ class CommentProcessor:
         ).astype(float)
 
         return donation_df
-
-
-def plot_results(response_dict: dict,
-                 plot_word_cloud: bool = True,
-                 word_cloud_terms: int = 10) -> None:
-    """
-    Plot results of comment analysis.
-
-    :param response_dict: dictionary with CommentProcessor response.
-    :param plot_word_cloud: show WordCloud of relevant terms.
-    :param word_cloud_terms: number of terms to plot in each word cloud.
-    """
-    sns.set(font_scale=1.3)
-    
-    if 'donations' in response_dict.keys():
-        response_dict['donations']['donation_df']['conv_donation'].hist(bins=30)
-        target_currency = response_dict['donations']['target_currency']
-        donations_total = round(response_dict['donations']['donation_df']['conv_donation'].sum(), 2)
-        
-        plt.xlabel(f'Donation [{target_currency}]')
-        plt.ylabel('Count [-]')
-        plt.title(f'Donations\nTotal: {donations_total} {target_currency}')
-        plt.show()
-
-    if 'comments' in response_dict.keys():
-        # plot overall comment polarity category bar chart
-        # melt the DF so we can plot both columns as categorical variables in the same plot
-        df_melted = response_dict['comments']['comment_df'].melt(value_vars=['sentiment_textblob', 'sentiment_vader'], 
-                                    var_name='Analysis Method', 
-                                    value_name='sentiment')
-
-        # plot using matplotlib / seaborn
-        plt.figure(figsize=(8, 6))
-        order = sorted(df_melted['sentiment'].unique())
-        
-        sns.countplot(x='sentiment', 
-                      hue='Analysis Method',
-                      order=order,
-                      data=df_melted, 
-                      dodge=True)
-
-        plt.suptitle('Comment Polarity')
-        plt.title('Categorical Distribution of Sentiment (TextBlob vs VADER)')
-        plt.xlabel('Sentiment')
-        plt.ylabel('Count [-]')
-        plt.show()
-
-        # plot individual comment polarity histogram
-        fig, ax = plt.subplots(figsize=(8, 6))
-        response_dict['comments']['comment_df']['polarity_textblob'].hist(
-           bins=30,
-           ax=ax, 
-           label='textblob', 
-           alpha=0.7
-        )
-        response_dict['comments']['comment_df']['polarity_vader'].hist(
-            bins=30, 
-            ax=ax, 
-            label='vader', 
-            alpha=0.7
-        )
-
-        plt.suptitle('Comment Polarity')
-        plt.title('Comment Polarity Histogram')
-        plt.xlabel('Polarity [-]')
-        plt.ylabel('Count [-]')
-        plt.legend()
-        plt.show()
-
-        # word clouds
-        if plot_word_cloud:
-            generate_wordcloud(
-                response_dict['comments']['relevant_terms']['positive'].head(word_cloud_terms),
-                title='Positive Comments'
-            )
-            generate_wordcloud(
-                response_dict['comments']['relevant_terms']['negative'].head(word_cloud_terms),
-                title='Negative Comments'
-            )

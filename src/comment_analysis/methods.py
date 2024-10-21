@@ -1,22 +1,18 @@
-"""methods.py -- methods for donation and sentiment analysis and WordCloud generation."""
+"""methods.py -- methods for donation and sentiment analysis."""
 
 import nltk
 import pandas as pd
-import random
-import seaborn as sns
 import string
 
 from currency_converter import CurrencyConverter
-from matplotlib import pyplot as plt
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from textblob import TextBlob
 from typing import List, Dict
-from wordcloud import WordCloud
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 
-"""Donation Analysis"""
+# Donation Analysis
 
 # dictionary for converting symbols to codes - extend if necessary
 symbol_to_code_dictionary = {
@@ -63,7 +59,7 @@ def get_currency_conversion_df(unique_currencies: List[str],
     return pd.DataFrame(conv_rates)    
 
 
-"""Comment Concatenation"""
+# Comment Concatenation
 
 def concatenate_comments(comments: List[str],
                          separator: str = " ||| ", 
@@ -103,7 +99,7 @@ def concatenate_comments(comments: List[str],
     return concatenated_strings
 
 
-"""Polarity Calculation"""
+# Polarity Calculation
 
 def get_comment_polarity_df(comments: List[str]) -> pd.DataFrame:
     """
@@ -212,43 +208,3 @@ def extract_relevant_terms(comment_df: pd.DataFrame,
         'positive': tfidf_positive,
         'negative': tfidf_negative
     }
-
-
-"""WordCloud Generation"""
-
-def custom_color_func(*args, 
-                      **kwargs) -> str:
-    """
-    Controls the color of the WordCloud based on a custom color function, following the HSL format (hue, saturation, brightness).
-
-    :return: HSL color code string.
-    """
-    # HSL format to control color tone
-    hue = 200  # constant hue
-    saturation = random.randint(40, 50)  # lower saturation for less vibrant colors (limits: 0 - 100)
-    lightness = random.randint(20, 80)   # color brightness (limits: 0 - 100, lower is darker)
-    
-    return f"hsl({hue}, {saturation}%, {lightness}%)"
-
-
-def generate_wordcloud(tfidf_scores: pd.Series,
-                       title: str) -> None:
-    """
-    Generate a WordCloud based on a series of TF-IDF scores.
-
-    :param tfidf_scores: pd.Series with scores.
-    :param title: title for the word cloud.
-    """
-    sns.set(font_scale=1.3)
-
-    wordcloud = WordCloud(width=600, 
-                          height=400, 
-                          background_color='white',
-                          random_state=42,
-                          color_func=custom_color_func).generate_from_frequencies(tfidf_scores)
-    
-    plt.figure(figsize=(6, 3))
-    plt.title(title)
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis('off')
-    plt.show()
