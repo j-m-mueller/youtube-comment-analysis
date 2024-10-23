@@ -6,10 +6,12 @@ sys.path.insert(0, "src")
 
 import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from comment_analysis.comment_processor import CommentProcessor
-from api.api_schema import AnalysisRequest, AnalysisResponse
+from src.comment_analysis.exceptions import NoCommentsFoundException
+from api.api_schema import CommentAnalysisRequest, AnalysisResponse
 
 
 # logging
@@ -29,31 +31,34 @@ async def get_response():
     return "Comment API is healthy"
 
 
-@app.post("/analyze-comments",
-          response_model=AnalysisResponse)
-async def analyze_comments(analysis_request: AnalysisRequest):
+@app.post("/analyze-comments")
+async def analyze_comments(analysis_request: CommentAnalysisRequest) -> JSONResponse:
     """
     Endpoint for the analysis of uploaded comments.
 
-    :param raw_html: HTML data to analyse (HTML body of YouTube video
-    :param analysis_params: optional dictionary with parameters for the analysis via CommentProcessor
+    :param analysis_request: JSON data of request in CommentAnalysisRequest format.
+
+    :return: returns a JSONResponse with metrics on the analyzed data or with an error description.
     """
-    request_params = analysis_request.dict()
+    request_params = analysis_request.model_dump()
     
     # check if the text is empty
     if not request_params['raw_html'].strip():
         raise HTTPException(status_code=400, detail="Text input cannot be empty.")
-
-    logger.info(f"{type(request_params)=}, {type(request_params['params'])=}, {request_params['params']=}")
     
     # run analysis
     processor = CommentProcessor(**request_params['params'])
 
-    response_dict = processor.process_comments(raw_html=request_params['raw_html'])
+    try:
+        response_dict = processor.process_comments(raw_html=request_params['raw_html'])
+    except NoCommentsFoundException as e:
+        logger.error(f"NoCommentsFoundException: {e}")
+        return JSONResponse(status_code=422,
+                            content="No/insufficient raw HTML provided.")
 
     response = {}
     for key in ['dislikes', 'donations', 'comments']:
         if key in response_dict.keys():
             response.update({key: response_dict[key]['metrics']})
 
-    return response
+    return AnalysisResponse(**response)

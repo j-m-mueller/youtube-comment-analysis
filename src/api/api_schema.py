@@ -1,6 +1,6 @@
 """src.api.api_schema.py -- schemata/data models for FastAPI endpoints"""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 
@@ -21,11 +21,13 @@ class AnalysisParams(BaseModel):
     dislike_polarity_cutoff: Optional[float] = 0.5
 
 
-class AnalysisRequest(BaseModel):
+class CommentAnalysisRequest(BaseModel):
     """Schema for Comment Analysis Request submission."""
     
     raw_html: str
     params: Optional[AnalysisParams]
+
+    model_config = ConfigDict(extra='forbid')
 
 
 class CommentMetrics(BaseModel):
@@ -44,6 +46,7 @@ class DonationMetrics(BaseModel):
 class DislikeMetrics(BaseModel):
     highly_positive_comments__count: int
     highly_negative_comments__count: int
+    positive_to_negative_comment_ratio: float
     likes__count: int
     dislikes__estimate: int
 
