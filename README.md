@@ -69,3 +69,7 @@ python main.py --raw-html-path ./my-file.txt
 ```
 
 Check `main.py` for available arguments.
+
+### Tests
+
+Parts of the code are covered by a pytest test suite. This test suite can be executed by running `pytest tests` from the root directory.
