@@ -1,5 +1,6 @@
 """src.comment_processor.py -- processor class for analysing YouTube comments."""
 
+import logging
 import pandas as pd
 import re
 import seaborn as sns
@@ -12,7 +13,10 @@ from tqdm import tqdm
 from typing import List, Dict
 
 from src.comment_analysis.methods import extract_relevant_terms, get_comment_polarity_df, concatenate_comments, get_currency_conversion_df
-from src.comment_analysis.exceptions import NoCommentsFoundException
+from src.comment_analysis.exceptions import NoCommentsFoundException, NoLikesFoundException, NoDonationsFoundException
+
+
+logger = logging.getLogger()
 
 
 @dataclass
@@ -37,7 +41,7 @@ class CommentProcessor:
         response_dict = {}
 
         if raw_html == '<!-- paste HTML <body ...>...</body> here! -->':
-            raise ValueError("Please provide a valid HTML body for analysis in `html_body.txt`!")
+            raise NoCommentsFoundException("Please provide a valid HTML body for analysis (locally in `html_body.txt` or via request JSON)!")
         
         soup = BeautifulSoup(raw_html, 'html.parser')
 
@@ -54,7 +58,10 @@ class CommentProcessor:
 
         # analyze donations
         if self.analyze_donations:
-            response_dict['donations'] = self._analyze_donations(soup=soup)
+            try:
+                response_dict['donations'] = self._analyze_donations(soup=soup)
+            except NoDonationsFoundException:
+                logger.info("No donations identified in HTML document.")
 
         return response_dict
 
@@ -72,8 +79,8 @@ class CommentProcessor:
         comment_df = get_comment_polarity_df(comments=translated_comments)
         relevant_terms = extract_relevant_terms(comment_df=comment_df)
 
-        print(f"\nExtracted {len(comments)} raw comments and successfully translated {len(translated_comments)} of them.")
-        print(f"Comment polarity median: VADER: {comment_df['polarity_vader'].median():.2f}, TextBlob: {comment_df['polarity_textblob'].median():.2f}")
+        logger.info(f"Extracted {len(comments)} raw comments and successfully translated {len(translated_comments)} of them.")
+        logger.info(f"Comment polarity median: VADER: {comment_df['polarity_vader'].median():.2f}, TextBlob: {comment_df['polarity_textblob'].median():.2f}\n")
 
         return {
             'metrics': {
@@ -106,7 +113,8 @@ round(comment_df['polarity_textblob'].median(), 4)
             raise NoCommentsFoundException("No comments identified within raw HTML. Please check provided data!")
         
         comment_spans = content_divs.findAll('span', {'role': 'text'})
-        comments = [comment.text.strip() for comment in comment_spans if 'Antwort' not in comment.text.strip()]
+        comments = [comment.text.strip() for comment in comment_spans 
+                    if all(term not in comment.text.strip() for term in ['Antwort', 'reply', 'replies'])]
 
         return comments
 
@@ -138,11 +146,11 @@ round(comment_df['polarity_textblob'].median(), 4)
             try:
                 raw_translations.append(translator.translate(concatenate, dest='en'))
             except Exception as e:
-                print(f"Error translating chunk {i}: {type(e)}: {e}")
+                logger.info(f"Error translating chunk {i}: {type(e)}: {e}")
                 failed.append(concatenate)
 
         if len(failed) > 0:
-            print(f"Translation of {len(failed)} chunks failed.")
+            logger.info(f"Translation of {len(failed)} chunks failed.")
 
         # split chunks back into individual comments
         combined_chunks = separator.join([translation.text for translation in raw_translations])
@@ -161,8 +169,13 @@ round(comment_df['polarity_textblob'].median(), 4)
         """
         # get like count
         like_divs = soup.findAll('div', {'class': 'yt-spec-button-shape-next__button-text-content'})
-        like_divs = [int(div.text.replace('.', '')) for div in like_divs if re.match('^\d{1,3}(\.\d{3})*$',  # regex expression for multi-digit number with point
-                                                                                     div.text)]
+
+        if len(like_divs) == 0:
+            raise NoLikesFoundException("Like div not found! Please check provided HTLM data.")
+
+        like_divs = [int(div.text.replace('.', '').strip()) for div in like_divs 
+                     if re.match(r'^\d{1,3}(\.\d{3})*$', div.text.strip())  # match counts with decimal separator
+                     or re.match(r'^\d+$', div.text.strip())]  # match counts without decimal separator
         like_count = like_divs[0]
 
         # get estimate of extremely positive/negative comment ratio
@@ -174,13 +187,14 @@ round(comment_df['polarity_textblob'].median(), 4)
 
         dislike_estimate = int(like_count / comment_ratio)
         
-        print(f"\nHighly positive comments: {highly_positive_count}, highly negative comments: {highly_negative_count}, ratio positive/negative: {comment_ratio}")
-        print(f"Video likes: {like_count}")
-        print(f"Estimate of video dislikes based on likes and comment polarity: {dislike_estimate}")
+        logger.info(f"Highly positive comments: {highly_positive_count}, highly negative comments: {highly_negative_count}, ratio positive/negative: {comment_ratio:.2f}")
+        logger.info(f"Video likes: {like_count}")
+        logger.info(f"Estimate of video dislikes based on likes and comment polarity: {dislike_estimate}\n")
 
         return {
             'highly_positive_comments__count': highly_positive_count,
             'highly_negative_comments__count': highly_negative_count,
+            'positive_to_negative_comment_ratio': comment_ratio,
             'likes__count': like_count,
             'dislikes__estimate': dislike_estimate
         }
@@ -195,6 +209,10 @@ round(comment_df['polarity_textblob'].median(), 4)
         :return: pd.DataFrame with donation data.
         """
         donation_df = self._get_donations_from_html(soup=soup)
+
+        if len(donation_df) == 0:
+            raise NoDonationsFoundException
+
         unique_currencies = donation_df['currency'].unique()
         
         curr_conv_df = get_currency_conversion_df(unique_currencies=unique_currencies,
@@ -203,7 +221,7 @@ round(comment_df['polarity_textblob'].median(), 4)
         merged_donation_df = donation_df.merge(curr_conv_df, left_on='currency', right_on='currency', how='left')
         merged_donation_df['conv_donation'] = merged_donation_df['donation'] * merged_donation_df['factor']
 
-        print(f"\nTotal sum of donations: {merged_donation_df['conv_donation'].sum():.2f} {self.target_currency}")
+        logger.info(f"Total sum of donations: {merged_donation_df['conv_donation'].sum():.2f} {self.target_currency}\n")
 
         return {
             'details': {
