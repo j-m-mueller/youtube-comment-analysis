@@ -22,9 +22,9 @@ Ensure to install the requirements into a new virtual environment (`pip install 
 
 You have multiple choices to execute the analysis:
 
-1. FastAPI access: Run the FastAPI and send analysis requests to it. This emulates application in a production environment. Note that it's just an emulation; this doesn't return the full analysis DataFrames or plots, but just returns a JSON summary of the gathered metrics.
-2. EDA / Method Development Notebook: Investigate the individual steps by going through the `youtube-comment-analysis.ipynb` notebook (includes explanations and some consistency tests). Choose this to understand the concept of the analysis.
-3. Productionized Analysis: Run the analysis through the CommentProcessor class via the `class-usage.ipynb` notebook (very compact notebook). This enables a condensed call to run the whole analysis. Choose this to quickly gather all outputs of the analysis, including plots.
+1. FastAPI access: run the FastAPI and send analysis requests to it. This emulates application in a production environment. The API returns a JSON summary of the gathered metrics.
+2. EDA / Method Development Notebook: investigate the individual steps of analysis by going through the `youtube-comment-analysis.ipynb` notebook (includes explanations and some consistency tests). Choose this path to understand the concept of the analysis and yield intermediates.
+3. Productionized Analysis: Run the analysis through the CommentProcessor class via the `class-usage.ipynb` notebook (very compact notebook). This enables a condensed call to run the whole analysis. Choose this path to quickly gather all outputs of the analysis, including plots.
 4. CLI access: Run `main.py` from the command line. You can adjust the source HTML path and plotting options via arguments. Choose for programmatic access independently from a Jupyter Notebook instance.
 
 ### FastAPI Access
@@ -62,14 +62,14 @@ if response.status_code == 200:
 
 ### CLI Access
 
-Submit queries via the CLI, e.g., like this:
+Submit queries via the CLI, e.g., like this, specifying HTML data stored in a custom file:
 
 ```sh
 python main.py --raw-html-path ./my-file.txt
 ```
 
-Check `main.py` for available arguments.
+Check `main.py` for all available arguments.
 
 ### Tests
 
-Parts of the code are covered by a pytest test suite. This test suite can be executed by running `pytest tests` from the root directory.
+The API and parts of the CommentProcessor class are covered by a pytest test suite. This test suite can be executed by running `pytest tests` from the root directory.
