@@ -1,0 +1,35 @@
+<html>
+  <body>
+    <div id="contents" class="style-scope ytd-item-section-renderer style-scope ytd-item-section-renderer">
+      <div class="comment-section">
+        <span role="text" class="style-scope">This is the first comment.</span>
+      </div>
+      <div class="comment-section">
+        <span role="text" class="style-scope">Great video! Very informative.</span>
+      </div>
+      <div class="comment-section">
+        <span role="text" class="style-scope">Antwort: Thank you for the reply!</span> <!-- This should be ignored -->
+      </div>
+      <div class="comment-section">
+        <span role="text" class="style-scope">I really enjoyed this tutorial.</span>
+      </div>
+      <div class="comment-section">
+        <span role="text" class="style-scope">Antwort: I have the same question.</span> <!-- This should be ignored -->
+      </div>
+      <div class="comment-section">
+        <span role="text" class="style-scope">Looking forward to the next episode.</span>
+      </div>
+    <div class="comment-section">
+        <span role="text" class="style-scope">Hated it.</span>
+      </div>
+    </div>
+
+    <!-- likes -->
+    <div class="yt-spec-button-shape-next__button-text-content">
+      12.345
+    </div>
+    <div class="yt-spec-button-shape-next__button-text-content">
+      12.345
+    </div>
+  </body>
+</html>

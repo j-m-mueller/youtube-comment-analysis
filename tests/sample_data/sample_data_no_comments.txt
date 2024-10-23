@@ -1,0 +1,16 @@
+<html>
+  <body>
+    <!-- likes -->
+    <div class="yt-spec-button-shape-next__button-text-content">
+      12.345
+    </div>
+    <div class="yt-spec-button-shape-next__button-text-content">
+      12.345
+    </div>
+
+    <!-- donations -->
+    <span id="comment-chip-price">50,00&nbsp;USD</span>
+    <span id="comment-chip-price">75,50&nbsp;EUR</span>
+    <span id="comment-chip-price">100,00&nbsp;GBP</span>
+  </body>
+</html>
