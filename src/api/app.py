@@ -6,10 +6,10 @@ sys.path.insert(0, "src")
 
 import logging
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
-from comment_analysis.comment_processor import CommentProcessor
+from src.comment_analysis.comment_processor import CommentProcessor
 from src.comment_analysis.exceptions import NoCommentsFoundException
 from api.api_schema import CommentAnalysisRequest, AnalysisResponse
 
@@ -50,7 +50,7 @@ async def analyze_comments(analysis_request: CommentAnalysisRequest) -> JSONResp
     processor = CommentProcessor(**request_params['params'])
 
     try:
-        response_dict = processor.process_comments(raw_html=request_params['raw_html'])
+        response_dict = processor.process_data(raw_html=request_params['raw_html'])
     except NoCommentsFoundException as e:
         logger.error(f"NoCommentsFoundException: {e}")
         return JSONResponse(status_code=422,

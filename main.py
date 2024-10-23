@@ -30,7 +30,7 @@ def main():
 
     # process data
     cp = CommentProcessor()
-    response_dict = cp.process_comments(raw_html=raw_html)
+    response_dict = cp.process_data(raw_html=raw_html)
 
     # plot results
     if args.plot_results == 'true':
