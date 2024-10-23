@@ -33,7 +33,7 @@ def generate_wordcloud(tfidf_scores: pd.Series,
     :param tfidf_scores: pd.Series with scores.
     :param title: title for the word cloud.
     """
-    sns.set(font_scale=1.3)
+    sns.set_theme(font_scale=1.3)
 
     wordcloud = WordCloud(width=600, 
                           height=400, 
@@ -60,7 +60,7 @@ def plot_results(response_dict: dict,
     :param plot_word_cloud: show WordCloud of relevant terms.
     :param word_cloud_terms: number of terms to plot in each word cloud.
     """
-    sns.set(font_scale=1.3)
+    sns.set_theme(font_scale=1.3)
     
     if 'donations' in response_dict.keys():
         response_dict['donations']['details']['donation_df']['conv_donation'].hist(bins=30)

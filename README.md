@@ -29,10 +29,10 @@ You have multiple choices to execute the analysis:
 
 ### FastAPI Access
 
-The FastAPI app is stored in `src.api.api_methods.py`. Start it using `uvicorn` via
+The FastAPI app is stored in `src.api.app.py`. Start it using `uvicorn` via
 
 ```
-uvicorn src.api.api_methods:app --port 8000 --reload
+uvicorn src.api.app:app --port 8000 --reload
 ```
 
 The Swagger UI can then be accessed via:
