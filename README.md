@@ -1,6 +1,6 @@
 # YouTube Comment Analysis
 
-Repository for the analysis of YouTube comments. Extracts information on:
+Repository for the analysis of YouTube comments based on raw HTML data. Extracts information on:
 
 1. Donations on the video (converted to a target currency)
 2. Translation of comments to English
@@ -25,7 +25,7 @@ You have multiple choices to execute the analysis:
 1. FastAPI access: run the FastAPI and send analysis requests to it. This emulates application in a production environment. The API returns a JSON summary of the gathered metrics.
 2. EDA / Method Development Notebook: investigate the individual steps of analysis by going through the `youtube-comment-analysis.ipynb` notebook (includes explanations and some consistency tests). Choose this path to understand the concept of the analysis and yield intermediates.
 3. Productionized Analysis: Run the analysis through the CommentProcessor class via the `class-usage.ipynb` notebook (very compact notebook). This enables a condensed call to run the whole analysis. Choose this path to quickly gather all outputs of the analysis, including plots.
-4. CLI access: Run `main.py` from the command line. You can adjust the source HTML path and plotting options via arguments. Choose for programmatic access independently from a Jupyter Notebook instance.
+4. Command line access: Run `main.py` from the command line. You can adjust the source HTML path and plotting options via arguments. Choose for programmatic access independently from a Jupyter Notebook instance.
 
 ### FastAPI Access
 
@@ -38,7 +38,7 @@ uvicorn src.api.app:app --port 8000 --reload
 The Swagger UI can then be accessed via:
 
 ```
-localhost://127.0.0.1:8000
+localhost://127.0.0.1:8000/docs
 ```
 
 Then, requests to the API can be submitted, e.g., via the requests library:
@@ -60,16 +60,20 @@ if response.status_code == 200:
     print(response.content)
 ```
 
-### CLI Access
+### Command Line Access
 
-Submit queries via the CLI, e.g., like this, specifying HTML data stored in a custom file:
+Submit queries via the command line, e.g., like this, specifying HTML data stored in a custom file:
 
 ```sh
 python main.py --raw-html-path ./my-file.txt
 ```
 
-Check `main.py` for all available arguments.
+List all available arguments by calling:
+
+```sh
+python main.py --help
+```
 
 ### Tests
 
-The API and parts of the CommentProcessor class are covered by a pytest test suite. This test suite can be executed by running `pytest tests` from the root directory.
+The API and parts of the CommentProcessor class are covered by a pytest test suite (functional / unit testing). This test suite can be executed by running `pytest tests  --cov src --cov-report html` from the root directory to yield test results and an HTML coverage report.

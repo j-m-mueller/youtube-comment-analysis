@@ -1,7 +1,9 @@
+"""main.py -- entrypoint script for Command Line access to the CommentProcessor"""
+
 import argparse
 
 from src.comment_analysis.comment_processor import CommentProcessor
-from src.comment_analysis.visualisation import plot_results
+from src.comment_analysis.visualisations import plot_results
 
 
 def main():
