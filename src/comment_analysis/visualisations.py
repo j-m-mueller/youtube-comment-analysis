@@ -31,22 +31,15 @@ def custom_color_func(*args,
 
 def generate_wordcloud(tfidf_scores: pd.Series,
                        title: str,
-                       tfidf_score_threshold: float = 0.1,
                        hide_output: bool = False) -> None:
     """
     Generate a WordCloud based on a series of TF-IDF scores.
 
     :param tfidf_scores: pd.Series with scores.
     :param title: title for the word cloud.
-    :param tfidf_score_threshold: threshold for scores to filter on.
     :param hide_output: boolean to trigger while testing to hide the ouptut.
     """
     sns.set_theme(font_scale=1.3)
-    
-    tfidf_scores_filtered = tfidf_scores[tfidf_scores > tfidf_score_threshold]
-    
-    if len(tfidf_scores_filtered) == 0:
-        logger.warning(f"No residual terms for TF-IDF score threshold of {tfidf_score_threshold} and WordCloud for {title}.")
 
     wordcloud = WordCloud(width=600, 
                           height=400, 
@@ -67,7 +60,6 @@ def generate_wordcloud(tfidf_scores: pd.Series,
 def plot_results(response_dict: dict,
                  plot_word_cloud: bool = True,
                  word_cloud_terms: int = 10,
-                 tfidf_score_threshold: float = 0.1,
                  hide_output: bool = False) -> None:
     """
     Plot results of comment analysis.
@@ -75,7 +67,6 @@ def plot_results(response_dict: dict,
     :param response_dict: dictionary with CommentProcessor response.
     :param plot_word_cloud: show WordCloud of relevant terms.
     :param word_cloud_terms: number of terms to plot in each word cloud.
-    :param tfidf_score_threshold: threshold for TF-IDF scores to filter for.
     :param hide_output: boolean to trigger while testing.
     """
     sns.set_theme(font_scale=1.3)
@@ -143,12 +134,10 @@ def plot_results(response_dict: dict,
             generate_wordcloud(
                 response_dict['comments']['details']['relevant_terms']['positive'].head(word_cloud_terms),
                 title='Positive Comments',
-                tfidf_score_threshold=tfidf_score_threshold,
                 hide_output=hide_output
             )
             generate_wordcloud(
                 response_dict['comments']['details']['relevant_terms']['negative'].head(word_cloud_terms),
                 title='Negative Comments',
-                tfidf_score_threshold=tfidf_score_threshold,
                 hide_output=hide_output
             )
