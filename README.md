@@ -76,4 +76,4 @@ python main.py --help
 
 ### Tests
 
-The API and parts of the CommentProcessor class are covered by a pytest test suite (functional / unit testing). This test suite can be executed by running `pytest tests  --cov src --cov-report html` from the root directory to yield test results and an HTML coverage report.
+The repository is covered by a pytest test suite (functional / unit testing). This test suite can be executed by running `pytest tests  --cov src --cov-report html` from the root directory to yield test results and an HTML coverage report.
