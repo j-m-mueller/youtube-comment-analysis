@@ -1,9 +1,13 @@
 """tests.test_comment_processor.py -- tests for the FastAPI."""
 
+import pathlib
 import pytest
 import requests
 
 from conftest import API_PORT, API_HOST
+
+
+CURRENT_DIR = pathlib.Path(__file__).parent
 
 
 def test_api_connection_available():
@@ -15,6 +19,23 @@ def test_api_connection_available():
     except requests.ConnectionError as e:
         pytest.fail(f"ConnectionError occurred: {e}")
 
+
+def test_extract_comments_endpoint():
+    """Test if the extract comments endpoint yields the expected number of comments."""
+    
+    file_path = CURRENT_DIR / "sample_data" / "sample_data_complete.txt"
+
+    with open(file_path, 'r', encoding='utf-8') as file:
+        sample_data = file.read()
+    
+    response = requests.post(url=f'http://{API_HOST}:{API_PORT}/extract-comments',
+                             json={'raw_html': sample_data})
+    comments = response.json()['comments']
+    
+    assert response.status_code == 200, f"Comment extraction request failed with status code {response.status_code}"
+    assert isinstance(comments, list), f"Returned comment list is not of type list, but of type {type(comments)}"
+    assert len(comments) == 5, f"Extracted number of comments should be 5, but is {len(comments)}"
+    
 
 class TestAnalyzeCommentsEndpoint:
     """Tests for analyze_comments endpoint."""
