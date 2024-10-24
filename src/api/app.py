@@ -6,12 +6,13 @@ sys.path.insert(0, "src")
 
 import logging
 
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
 from src.comment_analysis.comment_processor import CommentProcessor
 from src.comment_analysis.exceptions import NoCommentsFoundException
-from api.api_schema import CommentAnalysisRequest, AnalysisResponse
+from api.api_schema import CommentAnalysisRequest, AnalysisResponse, CommentExtractionRequest, CommentExtractionResponse
 
 
 # logging
@@ -26,15 +27,39 @@ logger.setLevel(logging.INFO)
 app = FastAPI()  
 
 
-@app.get('/health')
+@app.get('/health',
+         description='Check the health of the API.')
 async def get_response():
     return "Comment API is healthy"
 
 
-@app.post("/analyze-comments")
+@app.post("/extract-comments",
+          description='Extract comments from raw HTML data.')
+async def extract_comments(extraction_request: CommentExtractionRequest) -> JSONResponse:
+    """
+    Endpoint for the extraction of comments from raw HTML data.
+    
+    :param extraction_request: extraction request parameters in CommentExtractionRequest format.
+    
+    :return: list of extracted comments in a JSONResponse object.
+    """
+    try:
+        comments = CommentProcessor.get_comments_from_html(
+            soup=BeautifulSoup(extraction_request.raw_html, 'html.parser')
+        )
+    except NoCommentsFoundException:
+        logger.error(f"NoCommentsFoundException: {e}")
+        return JSONResponse(status_code=422,
+                            content="No/insufficient raw HTML provided.")
+        
+    logger.info(f"Successfully extracted {len(comments)} comments from raw HTML.")
+    return CommentExtractionResponse(comments=comments)
+
+@app.post("/analyze-comments",
+          description='Perform a complete analysis of comments, donations, and likes/dislikes based on raw HTML data.')
 async def analyze_comments(analysis_request: CommentAnalysisRequest) -> JSONResponse:
     """
-    Endpoint for the analysis of uploaded comments.
+    Endpoint for the complete analysis of uploaded raw HTML data.
 
     :param analysis_request: JSON data of request in CommentAnalysisRequest format.
 

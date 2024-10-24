@@ -1,19 +1,16 @@
 """src.comment_processor.py -- processor class for analysing YouTube comments."""
 
 import logging
-import pandas as pd
 
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
-from googletrans import Translator
-from tqdm import tqdm
 from typing import List
 
 from src.comment_analysis.nlp import extract_relevant_terms, get_comment_polarity_df
 from src.comment_analysis.dislikes import DislikeEstimator
 from src.comment_analysis.donations import DonationProcessor
 from src.comment_analysis.exceptions import NoCommentsFoundException, NoDonationsFoundException
-from src.comment_analysis.translation import CommentTranslator
+from src.comment_analysis.translations import CommentTranslator
 
 
 logger = logging.getLogger(__name__)
@@ -80,7 +77,7 @@ class CommentProcessor:
 
         :return: dictionary with comment-related data.
         """
-        comments = self._get_comments_from_html(soup=soup)
+        comments = self.get_comments_from_html(soup=soup)
         translated_comments = CommentTranslator().translate_comments(comments=comments)
         comment_df = get_comment_polarity_df(comments=translated_comments)
         relevant_terms = extract_relevant_terms(comment_df=comment_df)
@@ -103,8 +100,9 @@ round(comment_df['polarity_textblob'].median(), 4)
             }
         }
 
-    def _get_comments_from_html(self, 
-                                soup: BeautifulSoup) -> List[str]:
+    @classmethod
+    def get_comments_from_html(cls, 
+                               soup: BeautifulSoup) -> List[str]:
         """
         Isolate comments from bs4 object.
 
