@@ -1,11 +1,15 @@
 """src.comment_analysis.visualisation.py -- methods for analysis output visualiation."""
 
+import logging
 import pandas as pd
 import random
 import seaborn as sns
 
 from matplotlib import pyplot as plt
 from wordcloud import WordCloud
+
+
+logger = logging.getLogger(__name__)
 
 
 # WordCloud generation
@@ -26,14 +30,23 @@ def custom_color_func(*args,
 
 
 def generate_wordcloud(tfidf_scores: pd.Series,
-                       title: str) -> None:
+                       title: str,
+                       tfidf_score_threshold: float = 0.1,
+                       hide_output: bool = False) -> None:
     """
     Generate a WordCloud based on a series of TF-IDF scores.
 
     :param tfidf_scores: pd.Series with scores.
     :param title: title for the word cloud.
+    :param tfidf_score_threshold: threshold for scores to filter on.
+    :param hide_output: boolean to trigger while testing to hide the ouptut.
     """
     sns.set_theme(font_scale=1.3)
+    
+    tfidf_scores_filtered = tfidf_scores[tfidf_scores > tfidf_score_threshold]
+    
+    if len(tfidf_scores_filtered) == 0:
+        logger.warning(f"No residual terms for TF-IDF score threshold of {tfidf_score_threshold} and WordCloud for {title}.")
 
     wordcloud = WordCloud(width=600, 
                           height=400, 
@@ -45,20 +58,25 @@ def generate_wordcloud(tfidf_scores: pd.Series,
     plt.title(title)
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
-    plt.show()
+    if not hide_output:
+        plt.show()
 
 
 # Plotting of results
 
 def plot_results(response_dict: dict,
                  plot_word_cloud: bool = True,
-                 word_cloud_terms: int = 10) -> None:
+                 word_cloud_terms: int = 10,
+                 tfidf_score_threshold: float = 0.1,
+                 hide_output: bool = False) -> None:
     """
     Plot results of comment analysis.
 
     :param response_dict: dictionary with CommentProcessor response.
     :param plot_word_cloud: show WordCloud of relevant terms.
     :param word_cloud_terms: number of terms to plot in each word cloud.
+    :param tfidf_score_threshold: threshold for TF-IDF scores to filter for.
+    :param hide_output: boolean to trigger while testing.
     """
     sns.set_theme(font_scale=1.3)
     
@@ -70,7 +88,8 @@ def plot_results(response_dict: dict,
         plt.xlabel(f'Donation [{target_currency}]')
         plt.ylabel('Count [-]')
         plt.title(f'Donations\nTotal: {donations_total} {target_currency}')
-        plt.show()
+        if not hide_output:
+            plt.show()
 
     if 'comments' in response_dict.keys():
         # plot overall comment polarity category bar chart
@@ -93,8 +112,9 @@ def plot_results(response_dict: dict,
         plt.title('Categorical Distribution of Sentiment (TextBlob vs VADER)')
         plt.xlabel('Sentiment')
         plt.ylabel('Count [-]')
-        plt.show()
-
+        if not hide_output:
+            plt.show()
+            
         # plot individual comment polarity histogram
         fig, ax = plt.subplots(figsize=(8, 6))
         response_dict['comments']['details']['comment_df']['polarity_textblob'].hist(
@@ -115,15 +135,20 @@ def plot_results(response_dict: dict,
         plt.xlabel('Polarity [-]')
         plt.ylabel('Count [-]')
         plt.legend()
-        plt.show()
-
+        if not hide_output:
+            plt.show()
+            
         # word clouds
         if plot_word_cloud:
             generate_wordcloud(
                 response_dict['comments']['details']['relevant_terms']['positive'].head(word_cloud_terms),
-                title='Positive Comments'
+                title='Positive Comments',
+                tfidf_score_threshold=tfidf_score_threshold,
+                hide_output=hide_output
             )
             generate_wordcloud(
                 response_dict['comments']['details']['relevant_terms']['negative'].head(word_cloud_terms),
-                title='Negative Comments'
+                title='Negative Comments',
+                tfidf_score_threshold=tfidf_score_threshold,
+                hide_output=hide_output
             )
