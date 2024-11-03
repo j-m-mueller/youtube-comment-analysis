@@ -9,7 +9,7 @@ from typing import List
 from src.comment_analysis.nlp import extract_relevant_terms, get_comment_polarity_df
 from src.comment_analysis.dislikes import DislikeEstimator
 from src.comment_analysis.donations import DonationProcessor
-from src.comment_analysis.exceptions import NoCommentsFoundException, NoDonationsFoundException
+from src.comment_analysis.exceptions import NoCommentsFoundException, NoDonationsFoundException, NoLikesFoundException
 from src.comment_analysis.translations import CommentTranslator
 
 
@@ -46,14 +46,17 @@ class CommentProcessor:
         response_dict['comments'] = self._analyze_comments(soup=soup)
 
         # estimate dislikes
-        response_dict['dislikes'] = {
-            'metrics': DislikeEstimator(
-                dislike_polarity_cutoff=self.dislike_polarity_cutoff
-            ).estimate_dislikes(
-                soup=soup,
-                comment_df=response_dict['comments']['details']['comment_df']
-            )
-        }
+        try:
+            response_dict['dislikes'] = {
+                'metrics': DislikeEstimator(
+                    dislike_polarity_cutoff=self.dislike_polarity_cutoff
+                ).estimate_dislikes(
+                    soup=soup,
+                    comment_df=response_dict['comments']['details']['comment_df']
+                )
+            }
+        except NoLikesFoundException:
+            logger.info("No likes identified in HTML document.")
 
         # analyze donations
         if self.analyze_donations:

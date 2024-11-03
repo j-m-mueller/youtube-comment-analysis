@@ -79,6 +79,9 @@ class DislikeEstimator:
         like_divs = [int(div.text.replace('.', '').strip()) for div in like_divs 
                      if re.match(r'^\d{1,3}(\.\d{3})*$', div.text.strip())  # match counts with decimal separator
                      or re.match(r'^\d+$', div.text.strip())]  # match counts without decimal separator
+
+        if len(like_divs) == 0:
+            raise NoLikesFoundException("Like div not found! Please check provided HTLM data.")
         
         return like_divs[0]
     
