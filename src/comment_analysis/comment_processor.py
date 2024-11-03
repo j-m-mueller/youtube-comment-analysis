@@ -110,14 +110,16 @@ round(comment_df['polarity_textblob'].median(), 4)
 
         :return: list with comment texts.
         """
-        content_divs = soup.find('div', {'id': 'contents', 
-                                         'class': 'style-scope ytd-item-section-renderer style-scope ytd-item-section-renderer'})
+        content_divs = soup.findAll('div', {'id': 'contents', 
+                                            'class': 'style-scope ytd-item-section-renderer style-scope ytd-item-section-renderer'})
 
         if content_divs is None:
             raise NoCommentsFoundException("No comments identified within raw HTML. Please check provided data!")
-        
-        comment_spans = content_divs.findAll('span', {'role': 'text'})
-        comments = [comment.text.strip() for comment in comment_spans 
-                    if all(term not in comment.text.strip() for term in ['Antwort', 'reply', 'replies'])]
+
+        comments = []
+        for div in content_divs:
+            comment_spans = div.findAll('span', {'role': 'text'})
+            comments.extend([comment.text.strip() for comment in comment_spans 
+                             if all(term not in comment.text.strip() for term in ['Antwort', 'reply', 'replies'])])
 
         return comments
